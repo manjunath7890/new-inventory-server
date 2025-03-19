@@ -95,6 +95,24 @@ const PartsIOSchema = new mongoose.Schema({
 });
 const PartsIO = mongoose.model("InventoryPartsIO", PartsIOSchema);
 
+const IncommingSchema = new mongoose.Schema({
+  partId: String,
+  invoice: String,
+  partName: String,
+  specification: String,
+  catagory: String,
+  date: String,
+  quantity: String,
+  supplier: String,
+  batchNo: String,
+  IO: String,
+  unitPrice: Number,
+  price: Number,
+  purchasedBy: String,
+  location: String
+});
+const Incomming = mongoose.model("InventoryIncomming", IncommingSchema);
+
 const MsgSchema = new mongoose.Schema({
   from: String,
   to: String,
@@ -510,6 +528,29 @@ app.put("/partsIO/:id", async (req, res) => {
 });
 
 
+app.put("/updatePartId", async (req, res) => {
+  try {
+    const { oldPartId, newPartId } = req.body;
+
+    if (!oldPartId || !newPartId) {
+      return res.status(400).json({ message: "Both old and new Part IDs are required" });
+    }
+
+    const updatedParts = await PartsIO.updateMany(
+      { partId: oldPartId },
+      { $set: { partId: newPartId } }
+    );
+
+    if (updatedParts.matchedCount === 0) {
+      return res.status(404).json({ message: "No matching parts found" });
+    }
+
+    res.json({ message: "Part IDs updated successfully", updatedParts });
+  } catch (error) {
+    console.error("Error updating Part IDs:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 // Delete a IOpart
 app.delete("/deletepartsIO", async (req, res) => {
@@ -529,6 +570,75 @@ app.delete("/deletepartsIO", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+
+
+
+
+app.get("/getIncomming", async (req, res) => {
+  try {
+    const parts = await Incomming.find();
+    res.json(parts);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.post("/Incomming", async (req, res) => {
+  try {
+
+    const newParts = new Incomming(req.body);
+    await newParts.save();
+    res.status(201).json(newParts);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+app.put("/Incomming/:id", async (req, res) => {
+
+  try {
+    const updatedPartIO = await Incomming.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+
+    if (!updatedPartIO) {
+      return res.status(404).json({ message: "PartsIO record not found" });
+    }
+
+    res.json({ updatedPartIO });
+  } catch (error) {
+    console.error("Server error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Delete a IOpart
+app.delete("/deleteIncomming", async (req, res) => {
+  const { _id } = req.query;
+  if (!_id) {
+    return res.status(400).json({ message: "part ID is required" });
+  }
+
+  try {
+    const result = await Incomming.findOneAndDelete({ _id });
+    if (result) {
+      res.json({ message: "part deleted" });
+    } else {
+      res.status(404).json({ message: "part not found" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+
+
+
 
 // Read msg/notification List
 app.get("/notifications", async (req, res) => {
